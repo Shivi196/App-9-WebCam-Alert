@@ -1,13 +1,14 @@
 import cv2
 import time
 from emailing import send_email
+import glob
 
 video = cv2.VideoCapture(0)
 time.sleep(1)
 
 firstFrame = None
 status_list = []
-
+count = 1
 while True:
     status = 0
     check,frame = video.read()
@@ -21,7 +22,7 @@ while True:
         firstFrame = blurr_frame_gaus
 
     delta_frame = cv2.absdiff(firstFrame,blurr_frame_gaus)
-    # in delta_frame the image in video in quite grey and also bgd with noises or information there, you can put this delta_frame in imshow method and run program to check how image in vidoe looks now
+    # in delta_frame the image in video in quite grey and also bgd with noises or information there, you can put this delta_frame in imshow method and run program to check how image in video looks now
     # now we need to move to second stage where in we need to make my image white and whole bgd as black so it will be black and white in the frame. So we have only white pixels where there is object and black pixels when no object .
     # This is a classification of pixels based on threshold
     # if nos in matrix closer to 0 then it's black and if it's closer to 255 then its white background
@@ -46,7 +47,11 @@ while True:
 
         if rectangle.any():
             status = 1
-
+        cv2.imwrite(f"/Users/misha/PycharmProjects/app9-webcam-alert/images/{count}.png",frame)  # remember approx. 30 frames generated per second so if video is of 5sec so 150 images will be there in that video
+        count = count + 1
+        all_images = glob.glob("/Users/misha/PycharmProjects/app9-webcam-alert/images/*.png")
+        index = int(len(all_images)/2)
+        img_with_object = all_images[index+1]
 
     status_list.append(status)
     status_list = status_list[-2:]
