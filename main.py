@@ -1,7 +1,9 @@
+import os
 import cv2
 import time
 from emailing import send_email
 import glob
+from threading import Thread
 
 video = cv2.VideoCapture(0)
 time.sleep(1)
@@ -9,6 +11,14 @@ time.sleep(1)
 firstFrame = None
 status_list = []
 count = 1
+
+def clean_folder():
+    print("clean function started ")
+    images = glob.glob("/Users/misha/PycharmProjects/app9-webcam-alert/images/*.png")
+    for image in images:
+     os.remove(image)
+    print("clean function ended ")
+
 while True:
     status = 0
     check,frame = video.read()
@@ -34,7 +44,7 @@ while True:
 
     # To remove the noise from the image we want to dilate it as below
     dil_frame = cv2.dilate(thresh_frame,None,iterations=2)
-    cv2.imshow("My Video", dil_frame)
+    # cv2.imshow("My Video", dil_frame)
 
     # now in next stage we need to contour our white image as below , contouring is required for nxt step to make underline rectangle on our face
     contours,check = cv2.findContours(dil_frame,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
@@ -51,13 +61,21 @@ while True:
         count = count + 1
         all_images = glob.glob("/Users/misha/PycharmProjects/app9-webcam-alert/images/*.png")
         index = int(len(all_images)/2)
-        img_with_object = all_images[index+1]
+        img_with_object = all_images[index]
 
     status_list.append(status)
     status_list = status_list[-2:]
     # here 1 means object entered into frame and 0 means object left from the frame and then email willl be sent
+
     if status_list[0] == 1 and status_list[1] == 0:
-        send_email()
+        # send_email(img_with_object)
+        email_thread = Thread(target=send_email,args=(img_with_object,),daemon=True) #we have type comma in args so it take it as tuple not string
+        email_thread.start()
+        email_thread.join()  # Wait until email is sent before cleaning folder
+
+        clean_thread = Thread(target=clean_folder, daemon=True)
+        clean_thread.start()
+        # clean_folder()
 
     print(status_list)
 
@@ -68,6 +86,18 @@ while True:
         break
 
 video.release()
+
+clean_folder()
+cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
+
 
 
 # check2,frame2 = video.read()
